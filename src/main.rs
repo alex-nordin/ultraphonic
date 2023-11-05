@@ -70,7 +70,8 @@ fn main() -> ! {
 }
 
 // measure distance by timing how long it takes for a hypersonic pulse to bounce back to our sensor
-// needs to be passed an instance of a TC1 timer and trigger + echo pins. as of now these pins are hardcoded as PB0 a and PB1
+// needs to be passed an instance of a TC1 timer and trigger + echo pins.
+// I chose to make these pins dynamic and not hardcode which pins are used, which incurs a runtime performance loss
 fn measure_distance(
     timer: &TC1,
     trigger_pin: &mut Pin<Output>,
@@ -105,9 +106,7 @@ fn measure_distance(
 
     // if echo pin was held in high for too long and it exceeds the bounds of a u16 int we count it as a bad reading and return a 0
     match distance {
-        u16::MAX => {
-            0
-        }
+        u16::MAX => 0,
         // otherwise calculate the distance from the timer value. TODO: why divide by 58? possibly correct but double check math
         _ => distance / 58,
     };
