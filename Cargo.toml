@@ -17,7 +17,11 @@ nb = "0.1.2"
 embedded-hal = "0.2.3"
 ag-lcd = "0.2.0"
 itoa = "1.0.9"
-ryu = "1.0.15"
+
+[dependencies.easy-cast]
+version = "0.5.2"
+default-features = false 
+features = ["libm"]
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"

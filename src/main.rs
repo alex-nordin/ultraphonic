@@ -8,7 +8,6 @@ use arduino_hal::port::mode::Output;
 use arduino_hal::port::Pin;
 use avr_device::atmega328p::TC1;
 use panic_halt as _;
-use ryu::*;
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -16,7 +15,7 @@ fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
     // configure serial port with default values
-    // let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
+    let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
     // HC-SR04 ultrasonic sensor has a trigger pin wired to d9, which triggers a sound wave
     // I took inspiration for how to work with timers and the sensor at :
@@ -57,12 +56,12 @@ fn main() -> ! {
         // get distance to target of one is within range
         let distance_to_target = measure_distance(&timer, &mut trigger, &echo);
         // the lcd crate I chose can only print &str so we use the itoa crate to efficiently convert u16 to str
-        let mut buffer = Buffer::new();
+        let mut buffer = itoa::Buffer::new();
         let print_distance = buffer.format(distance_to_target);
-        // print on lcd screen
+        // // print on lcd screen
         lcd.print(print_distance);
         // write to serial for debuggin
-        // ufmt::uwriteln!(&mut serial, "{} cm", distance_to_target).unwrap();
+        ufmt::uwriteln!(&mut serial, "{} mm", distance_to_target as u16).unwrap();
         // clear screen so we don't overlap text on lcd
         lcd.clear();
         // delay at the end of each loop before sending another sonic pulse
@@ -77,9 +76,7 @@ fn measure_distance(
     timer: &TC1,
     trigger_pin: &mut Pin<Output>,
     echo_pin: &Pin<Input<Floating>>,
-) -> f32 {
-    const HALF_SPEED_OF_SOUND: f32 = 0.017;
-
+) -> u16 {
     // reset timer at the start of each measurement
     timer.tcnt1.write(|w| w.bits(0));
 
@@ -92,7 +89,7 @@ fn measure_distance(
     while echo_pin.is_low() {
         // if our timer runs out while we wait for the pulse to return no object has been detected. currently just setting distance as 0
         if timer.tcnt1.read().bits() >= 50_000 {
-            let early_return_distance: f32 = 0.0;
+            let early_return_distance = 0;
             return early_return_distance;
         }
     }
@@ -105,7 +102,14 @@ fn measure_distance(
 
     // reading distance as the value of the timer multiplied by 4, as each clock tick is 4 us
     // saturating mul is multiplication where product cannot exceed a certain threshold
-    let clock_ticks_as_us = timer.tcnt1.read().bits().saturating_mul(4) as f32;
+    let distance = timer.tcnt1.read().bits().saturating_mul(4);
 
-    clock_ticks_as_us * HALF_SPEED_OF_SOUND
+    // if echo pin was held in high for too long and it exceeds the bounds of a u16 int we count it as a bad reading and return a 0
+    match distance {
+        u16::MAX => 0,
+        // otherwise calculate the distance from the timer value. TODO: why divide by 58? possibly correct but double check math
+        _ => distance / 58,
+    };
+
+    distance
 }
