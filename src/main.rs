@@ -16,7 +16,7 @@ fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
     // configure serial port with default values
-    let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
+    // let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
     // HC-SR04 ultrasonic sensor has a trigger pin wired to d9, which triggers a sound wave
     // I took inspiration for how to work with timers and the sensor at :
@@ -107,15 +107,5 @@ fn measure_distance(
     // saturating mul is multiplication where product cannot exceed a certain threshold
     let clock_ticks_as_us = timer.tcnt1.read().bits().saturating_mul(4) as f32;
 
-    let distance = clock_ticks_as_us * HALF_SPEED_OF_SOUND;
-
-    // if echo pin was held in high for too long and it exceeds the bounds of a u16 int we count it as a bad reading and return a 0
-    // 0.017
-    // match distance {
-    //     u16::MAX => 0,
-    //     // otherwise calculate the distance from the timer value. TODO: why divide by 58? possibly correct but double check math
-    //     _ => distance as f32 * HALF_SPEED_OF_SOUND,
-    // };
-
-    distance
+    clock_ticks_as_us * HALF_SPEED_OF_SOUND
 }
