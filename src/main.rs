@@ -60,9 +60,9 @@ fn main() -> ! {
         let print_distance = buffer.format(distance_to_target);
         // // print on lcd screen
         lcd.print(print_distance);
-        lcd.print(" mm");
+        lcd.print(" cm");
         // write to serial for debuggin
-        ufmt::uwriteln!(&mut serial, "{} mm", distance_to_target as u16).unwrap();
+        ufmt::uwriteln!(&mut serial, "{} cm", print_distance).unwrap();
         // clear screen so we don't overlap text on lcd
         // delay at the end of each loop before sending another sonic pulse
         arduino_hal::delay_ms(1000);
@@ -103,14 +103,15 @@ fn measure_distance(
 
     // reading distance as the value of the timer multiplied by 4, as each clock tick is 4 us
     // saturating mul is multiplication where product cannot exceed a certain threshold
-    let distance = timer.tcnt1.read().bits().saturating_mul(4);
+    let clock_ticks_as_us = timer.tcnt1.read().bits().saturating_mul(4);
+    // distance /= 58;
 
     // if echo pin was held in high for too long and it exceeds the bounds of a u16 int we count it as a bad reading and return a 0
-    match distance {
+    let dist = match clock_ticks_as_us {
         u16::MAX => 0,
         // otherwise calculate the distance from the timer value. TODO: why divide by 58? possibly correct but double check math
-        _ => distance / 58,
+        _ => clock_ticks_as_us / 58,
     };
 
-    distance
+    dist
 }
