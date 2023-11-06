@@ -60,12 +60,13 @@ fn main() -> ! {
         let print_distance = buffer.format(distance_to_target);
         // // print on lcd screen
         lcd.print(print_distance);
+        lcd.print(" mm");
         // write to serial for debuggin
         ufmt::uwriteln!(&mut serial, "{} mm", distance_to_target as u16).unwrap();
         // clear screen so we don't overlap text on lcd
-        lcd.clear();
         // delay at the end of each loop before sending another sonic pulse
         arduino_hal::delay_ms(1000);
+        lcd.clear();
     }
 }
 
